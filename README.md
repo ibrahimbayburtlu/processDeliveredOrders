@@ -92,3 +92,58 @@ To run tests:
 - MySQL
 - Apache Kafka
 - Docker
+
+## Database Structure
+
+The application uses MySQL database with the following structure:
+
+### Orders Table
+```sql
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME NOT NULL,
+    last_updated_at DATETIME NOT NULL,
+    collection_started_at DATETIME,
+    collected_at DATETIME,
+    delivery_started_at DATETIME,
+    delivery_at DATETIME,
+    eta INT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    INDEX idx_delivery_at (delivery_at),
+    INDEX idx_customer_id (customer_id)
+);
+```
+
+### Database Indexes
+The table has two indexes for performance optimization:
+
+1. `idx_delivery_at`: 
+   - Used for querying orders by delivery date
+   - Optimizes the `/orders/process/{date}` endpoint
+   - Improves performance when filtering delivered orders
+
+2. `idx_customer_id`:
+   - Used for querying orders by customer
+   - Optimizes customer-specific order queries
+   - Improves performance when filtering orders by customer
+
+### Sample Data
+The application comes with 10 sample orders that cover different scenarios:
+
+1. **Delivered Orders (6 orders)**
+   - 3 orders delivered on time (order_in_time: true)
+     - Order 6: ETA 50min, Actual 45min
+     - Order 8: ETA 60min, Actual 55min
+     - Order 10: ETA 45min, Actual 40min
+   - 3 orders delivered late (order_in_time: false)
+     - Order 1: ETA 30min, Actual 60min
+     - Order 7: ETA 30min, Actual 60min
+     - Order 9: ETA 40min, Actual 45min
+
+2. **Undelivered Orders (4 orders)**
+   - Order 2: Not yet picked
+   - Order 3: Collection started but not completed
+   - Order 4: Picked but not yet dispatched
+   - Order 5: Delivery started but not yet delivered
+
+All orders are dated within the same day (February 20, 2024) to demonstrate different order states and delivery scenarios.
