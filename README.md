@@ -1,23 +1,23 @@
-# Startup Heroes Sipariş İşleme Sistemi
+# Startup Heroes Order Processing System
 
-Bu proje, teslim edilmiş siparişleri işleyen ve Kafka'ya gönderen bir Spring Boot uygulamasıdır.
+This project is a Spring Boot application that processes delivered orders and sends them to Kafka.
 
-## Gereksinimler
+## Requirements
 
 - Java 17
 - Maven
-- Docker ve Docker Compose
+- Docker and Docker Compose
 - MySQL 8.0
 
-## Kurulum Adımları
+## Setup Steps
 
-1. Projeyi klonlayın:
+1. Clone the project:
 ```bash
 git clone https://github.com/ibrahimbayburtlu/processDeliveredOrders.git
 cd processDeliveredOrders
 ```
 
-2. MySQL veritabanını oluşturun:
+2. Create MySQL database:
 ```sql
 CREATE DATABASE startupheroes;
 CREATE USER 'startupheroes'@'localhost' IDENTIFIED BY 'startupheroes';
@@ -25,67 +25,70 @@ GRANT ALL PRIVILEGES ON startupheroes.* TO 'startupheroes'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-3. Kafka'yı başlatın:
+3. Start Kafka:
 ```bash
 docker-compose up -d
 ```
 
-4. Uygulamayı derleyin ve çalıştırın:
+4. Build and run the application:
 ```bash
 ./mvnw clean install
 ./mvnw spring-boot:run
 ```
 
-## API Kullanımı
+## API Usage
 
-### 1. Tüm Siparişleri Listele
+You can access the Postman collection [here](https://www.postman.co/workspace/My-Workspace~7dccbd6a-2662-4207-844c-851c8075a9f9/collection/43250738-f85e51d6-690d-4eb7-b08d-816e7be323c6?action=share&creator=43250738).
+
+### 1. List All Orders
 ```bash
 curl http://localhost:8081/orders
 ```
 
-### 2. ID'ye Göre Sipariş Getir
+### 2. Get Order by ID
 ```bash
 curl http://localhost:8081/orders/{id}
 ```
 
-### 3. Belirli Bir Tarihteki Teslim Edilmiş Siparişleri İşle
+### 3. Process Delivered Orders for a Specific Date
 ```bash
 curl --location 'http://localhost:8081/orders/process/2024-02-20'
 ```
 
-## Kafka Mesajlarını İzleme
+## Monitoring Kafka Messages
 
-Kafka'ya gönderilen mesajları izlemek için:
+To monitor messages sent to Kafka:
 ```bash
 docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic order_delivery_statistics --from-beginning
 ```
 
-## Proje Yapısı
+## Project Structure
 
 ```
 src/main/java/com/startupheroes/startupheroes/
-├── controller/     # API endpoint'leri
-├── service/        # İş mantığı
-├── repository/     # Veritabanı işlemleri
-├── entity/         # Veritabanı modelleri
-├── model/          # DTO'lar
-├── kafka/          # Kafka işlemleri
-├── config/         # Konfigürasyon sınıfları
-└── exception/      # Özel exception'lar
+├── controller/     # REST API endpoints (OrderController)
+├── service/        # Business logic implementation (OrderService, OrderServiceImpl)
+├── repository/     # Database operations (OrderRepository)
+├── entity/         # JPA entities (Order)
+├── model/          # Data Transfer Objects (DeliveredOrder)
+├── kafka/          # Kafka producers (OrderKafkaProducer)
+├── config/         # Application configuration (KafkaConfig)
+├── constant/       # Application constants (KafkaTopics,Endpoints)
+└── exception/      # Custom exceptions (OrderNotFoundException, GlobalExceptionHandler)
 ```
 
-## Test
+## Testing
 
-Testleri çalıştırmak için:
+To run tests:
 ```bash
 ./mvnw test
 ```
 
-## Teknolojiler
+## Technologies
 
 - Spring Boot 3.4.5
 - Spring Data JPA
 - Spring Kafka
 - MySQL
 - Apache Kafka
-- Docker 
+- Docker
