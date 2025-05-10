@@ -46,11 +46,9 @@ class OrderControllerTest {
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
         
-        // Sample order setup
         sampleOrder = new Order();
         sampleOrder.setId(1L);
         
-        // Sample delivered order setup
         sampleDeliveredOrder = DeliveredOrder.builder()
             .id(1L)
             .created_at("2024-02-20 10:00:00")
@@ -70,11 +68,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders should return all orders")
         void getAllOrders_ShouldReturnAllOrders() throws Exception {
-            // Arrange
             List<Order> orders = Arrays.asList(sampleOrder);
             when(orderService.getAllOrders()).thenReturn(orders);
 
-            // Act & Assert
             mockMvc.perform(get("/orders"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -85,10 +81,8 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders/{id} should return order when exists")
         void getOrderById_WhenExists_ShouldReturnOrder() throws Exception {
-            // Arrange
             when(orderService.getOrderById(1L)).thenReturn(sampleOrder);
 
-            // Act & Assert
             mockMvc.perform(get("/orders/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -98,10 +92,8 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders/{id} should return 404 when order not found")
         void getOrderById_WhenNotExists_ShouldReturn404() throws Exception {
-            // Arrange
             when(orderService.getOrderById(999L)).thenReturn(null);
 
-            // Act & Assert
             mockMvc.perform(get("/orders/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is("Order not found with id: 999")));
@@ -115,11 +107,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders/process/{date} should return processed orders")
         void processDeliveredOrders_ShouldReturnProcessedOrders() throws Exception {
-            // Arrange
             List<DeliveredOrder> deliveredOrders = Arrays.asList(sampleDeliveredOrder);
             when(orderService.processDeliveredOrders(any(LocalDate.class))).thenReturn(deliveredOrders);
 
-            // Act & Assert
             mockMvc.perform(get("/orders/process/2024-02-20"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -132,10 +122,8 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders/process/{date} should return empty list when no orders")
         void processDeliveredOrders_WhenNoOrders_ShouldReturnEmptyList() throws Exception {
-            // Arrange
             when(orderService.processDeliveredOrders(any(LocalDate.class))).thenReturn(List.of());
 
-            // Act & Assert
             mockMvc.perform(get("/orders/process/2024-02-20"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -145,7 +133,6 @@ class OrderControllerTest {
         @Test
         @DisplayName("GET /orders/process/{date} should return 400 when date is invalid")
         void processDeliveredOrders_WithInvalidDate_ShouldReturn400() throws Exception {
-            // Act & Assert
             mockMvc.perform(get("/orders/process/invalid-date"))
                 .andExpect(status().isBadRequest());
         }
