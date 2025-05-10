@@ -108,24 +108,9 @@ CREATE TABLE orders (
     delivery_started_at DATETIME,
     delivery_at DATETIME,
     eta INT NOT NULL,
-    customer_id BIGINT NOT NULL,
-    INDEX idx_delivery_at (delivery_at),
-    INDEX idx_customer_id (customer_id)
+    customer_id BIGINT NOT NULL
 );
 ```
-
-### Database Indexes
-The table has two indexes for performance optimization:
-
-1. `idx_delivery_at`: 
-   - Used for querying orders by delivery date
-   - Optimizes the `/orders/process/{date}` endpoint
-   - Improves performance when filtering delivered orders
-
-2. `idx_customer_id`:
-   - Used for querying orders by customer
-   - Optimizes customer-specific order queries
-   - Improves performance when filtering orders by customer
 
 ### Sample Data
 The application comes with 10 sample orders that cover different scenarios:
