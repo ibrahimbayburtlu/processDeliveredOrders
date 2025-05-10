@@ -1,4 +1,4 @@
-# Startup Heroes Order Processing System
+# Startup Heroes Sipariş İşleme Sistemi
 
 Bu proje, teslim edilmiş siparişleri işleyen ve Kafka'ya gönderen bir Spring Boot uygulamasıdır.
 
@@ -9,18 +9,18 @@ Bu proje, teslim edilmiş siparişleri işleyen ve Kafka'ya gönderen bir Spring
 - Docker ve Docker Compose
 - MySQL 8.0
 
-## Kurulum
+## Kurulum Adımları
 
 1. Projeyi klonlayın:
 ```bash
-git clone [repo-url]
-cd startupheroes
+git clone https://github.com/ibrahimbayburtlu/processDeliveredOrders.git
+cd processDeliveredOrders
 ```
 
 2. MySQL veritabanını oluşturun:
 ```sql
 CREATE DATABASE startupheroes;
-CREATE USER 'startupheroes'@'localhost' IDENTIFIED BY 'startupheroes123';
+CREATE USER 'startupheroes'@'localhost' IDENTIFIED BY 'startupheroes';
 GRANT ALL PRIVILEGES ON startupheroes.* TO 'startupheroes'@'localhost';
 FLUSH PRIVILEGES;
 ```
@@ -30,26 +30,56 @@ FLUSH PRIVILEGES;
 docker-compose up -d
 ```
 
-4. Uygulamayı başlatın:
+4. Uygulamayı derleyin ve çalıştırın:
 ```bash
+./mvnw clean install
 ./mvnw spring-boot:run
 ```
 
 ## API Kullanımı
 
-### Teslim Edilmiş Siparişleri İşleme
-
+### 1. Tüm Siparişleri Listele
 ```bash
-curl -X POST http://localhost:8081/api/orders/process-delivered-orders?date=2024-05-09T10:00:00
+curl http://localhost:8081/orders
+```
+
+### 2. ID'ye Göre Sipariş Getir
+```bash
+curl http://localhost:8081/orders/{id}
+```
+
+### 3. Belirli Bir Tarihteki Teslim Edilmiş Siparişleri İşle
+```bash
+curl --location 'http://localhost:8081/orders/process/2024-02-20'
+```
+
+## Kafka Mesajlarını İzleme
+
+Kafka'ya gönderilen mesajları izlemek için:
+```bash
+docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic order_delivery_statistics --from-beginning
 ```
 
 ## Proje Yapısı
 
-- `src/main/java/com/startupheroes/startupheroes/controller`: API endpoint'leri
-- `src/main/java/com/startupheroes/startupheroes/service`: İş mantığı
-- `src/main/java/com/startupheroes/startupheroes/repository`: Veritabanı işlemleri
-- `src/main/java/com/startupheroes/startupheroes/model`: Veri modelleri
-- `src/main/java/com/startupheroes/startupheroes/kafka`: Kafka işlemleri
+```
+src/main/java/com/startupheroes/startupheroes/
+├── controller/     # API endpoint'leri
+├── service/        # İş mantığı
+├── repository/     # Veritabanı işlemleri
+├── entity/         # Veritabanı modelleri
+├── model/          # DTO'lar
+├── kafka/          # Kafka işlemleri
+├── config/         # Konfigürasyon sınıfları
+└── exception/      # Özel exception'lar
+```
+
+## Test
+
+Testleri çalıştırmak için:
+```bash
+./mvnw test
+```
 
 ## Teknolojiler
 
