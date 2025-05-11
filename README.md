@@ -58,10 +58,16 @@ curl --location 'http://localhost:8081/orders/process/2024-02-20'
 ## Monitoring Kafka Messages
 
 To monitor messages sent to Kafka:
+
+### Listen to all messages from the beginning
 ```bash
 docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic order_delivery_statistics --from-beginning
 ```
 
+### Listen only to new messages
+```bash
+docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic order_delivery_statistics
+```
 ## Project Structure
 
 ```
