@@ -20,7 +20,7 @@ Airflow, karmaşık veri işleme süreçlerini otomatize etmek için geliştiril
 - Başarısız görevlerde bağımlı görevler otomatik durdurulur.
 - Paralel çalışabilecek görevler otomatik tespit edilir.
 
-### 2. Zamanlanmış Görevler
+### 2. Zamanlanmış Görevler(Cron Job)
 - Cron benzeri ifadelerle esnek zamanlama sayesinde görevleri otomotize edebiliriz.
 - Örnek zamanlamalar:
   ```python
@@ -77,36 +77,6 @@ Bu özellikler, sipariş işleme sürecimiz için ideal çünkü:
 - Hata durumunda hızlı müdahale gerekli
 - Süreç performansının izlenmesi önemli
 
-## Airflow'un Algoritma Yapısı
-
-Airflow, temel olarak şu Yöneylem Araştırması algoritmalarını kullanır:
-
-1. **Graf Teorisi (DAG)**
-   - Görevler arası bağımlılıkları yönetmek için
-   - En kısa yol algoritması ile task sıralaması
-   - Topolojik sıralama ile bağımlılık çözümleme
-
-2. **Kuyruk Teorisi**
-   - Task'ların işlenme sırasını belirleme
-   - Worker havuzu optimizasyonu
-   - Kaynak kullanımını dengeleme
-
-3. **Zamanlama Algoritmaları**
-   - Cron ifadeleri ile görev planlama
-   - Paralel işlem optimizasyonu
-   - Kaynak kullanımına göre görev dağıtımı
-
-4. **Hata Yönetimi ve Retry Stratejileri**
-   - Exponential Backoff algoritması
-   - Hata durumunda yeniden deneme stratejileri
-   - Kaynak kullanımına göre retry planlaması
-
-5. **Kaynak Optimizasyonu**
-   - Dinamik programlama ile kaynak dağıtımı
-   - Worker havuzu ölçeklendirme
-   - Yük dengeleme algoritmaları
-
-
 ## Workflow
 
 ```mermaid
@@ -128,4 +98,4 @@ Extract (Veri Çekme) adımında, MySQL veritabanından belirli bir tarih aralı
 
 Transform (Veri Dönüştürme) adımında, geçerli siparişler için teslimat süreleri hesaplanır. ETA ve gerçek teslimat süreleri karşılaştırılır, veriler temizlenir ve Kafka'ya uygun formata dönüştürülür.
 
-Load (Veri Yükleme) adımında, işlenmiş veriler Kafka'ya gönderilir. Gönderim başarısı doğrulanır. Hata durumunda, sistem 3 kez 5'er dakika(tamamen farazi) aralıklarla yeniden deneme yapar. Maksimum deneme sayısına ulaşıldığında, hata loglanır ve ilgili ekip bilgilendirilir.
+Load (Veri Yükleme) adımında, işlenmiş veriler Kafka'ya gönderilir. Gönderim başarısı doğrulanır. Hata durumunda, sistem 3 kez 5'er dakika(tamamen farazi) aralıklarla yeniden deneme yapar.
