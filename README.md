@@ -113,7 +113,9 @@ CREATE TABLE orders (
 ```
 
 ### Sample Data
-The application comes with 10 sample orders that cover different scenarios:
+The application comes with 25 sample orders that cover different scenarios across two days (February 20-21, 2024):
+
+#### February 20, 2024 Orders
 
 1. **Delivered Orders (6 orders)**
    - 3 orders delivered on time (order_in_time: true)
@@ -124,11 +126,42 @@ The application comes with 10 sample orders that cover different scenarios:
      - Order 1: ETA 30min, Actual 60min
      - Order 7: ETA 30min, Actual 60min
      - Order 9: ETA 40min, Actual 45min
+     - Order 11: ETA 35min, Actual 50min
 
-2. **Undelivered Orders (4 orders)**
-   - Order 2: Not yet picked
-   - Order 3: Collection started but not completed
-   - Order 4: Picked but not yet dispatched
-   - Order 5: Delivery started but not yet delivered
+2. **Undelivered Orders (9 orders)**
+   - Not yet picked (2 orders)
+     - Order 2
+     - Order 12
+   - Collection started but not completed (2 orders)
+     - Order 3
+     - Order 13
+   - Picked but not yet dispatched (2 orders)
+     - Order 4
+     - Order 14
+   - Delivery started but not yet delivered (3 orders)
+     - Order 5
+     - Order 15
 
-All orders are dated within the same day (February 20, 2024) to demonstrate different order states and delivery scenarios.
+#### February 21, 2024 Orders
+
+1. **Delivered Orders (7 orders)**
+   - 4 orders delivered on time (order_in_time: true)
+     - Order 16: ETA 40min, Actual 35min
+     - Order 18: ETA 50min, Actual 45min
+     - Order 20: ETA 45min, Actual 40min
+     - Order 25: ETA 35min, Actual 30min
+   - 3 orders delivered late (order_in_time: false)
+     - Order 17: ETA 25min, Actual 40min
+     - Order 19: ETA 30min, Actual 35min
+
+2. **Undelivered Orders (3 orders)**
+   - Not yet picked (1 order)
+     - Order 21
+   - Collection started but not completed (1 order)
+     - Order 22
+   - Picked but not yet dispatched (1 order)
+     - Order 23
+   - Delivery started but not yet delivered (1 order)
+     - Order 24
+
+The orders are distributed across February 20-21, 2024 to demonstrate different order states and delivery scenarios.
