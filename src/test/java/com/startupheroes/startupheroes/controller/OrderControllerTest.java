@@ -134,7 +134,9 @@ class OrderControllerTest {
         @DisplayName("GET /orders/process/{date} should return 400 when date is invalid")
         void processDeliveredOrders_WithInvalidDate_ShouldReturn400() throws Exception {
             mockMvc.perform(get("/orders/process/invalid-date"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Bad Request")))
+                .andExpect(jsonPath("$.message", is("Method parameter 'date': Failed to convert value of type 'java.lang.String' to required type 'java.time.LocalDate'; Failed to convert from type [java.lang.String] to type [@org.springframework.web.bind.annotation.PathVariable java.time.LocalDate] for value [invalid-date]")));
         }
     }
 }
