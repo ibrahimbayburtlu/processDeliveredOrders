@@ -1,10 +1,111 @@
 # Sipariş İşleme Otomasyonu - Airflow Çözümü
 
-Bu proje, teslim edilmiş siparişleri günlük olarak işleyen ve Kafka'ya gönderen bir Airflow DAG'ıdır. Airflow, karmaşık veri işleme süreçlerini otomatize etmek için ideal bir araçtır. Görsel workflow yönetimi, merkezi monitoring ve otomatik retry mekanizması gibi özellikleriyle, sipariş işleme sürecini güvenilir ve ölçeklenebilir bir şekilde yönetmemizi sağlar. Biz bu java application özelinde yapılan işlemleri airflow kullanarak otomatik olacak şekilde yapabiliriz.
+## Soru : Bu süreci günlük olarak otomatikleştirmenizi istesek, bir araç öneriniz ne olurdu? Bu soru için bir Java uygulaması yazmanız gerekmez. Herhangi bir dil, çerçeve ve araç kullanabilirsiniz. Lütfen nedenleriyle birlikte açıklayın. (Bu soru için kodlama gerekmiyor, sadece bir akış önerisi istiyoruz)
+
+Bu problem aslında günlük olarak teslim edilen siparişleri filtreleme yapıp bunları DeliveredOrder objesine dönüştürüp order_delivery_statistics topic gönderen bir uygulamadır.Biz bu programı otomatize edebiliriz.
+Airflow, karmaşık veri işleme süreçlerini otomatize etmek için ideal bir araçtır. Görsel workflow yönetimi, merkezi monitoring ve otomatik retry mekanizması gibi özellikleriyle, sipariş işleme sürecini güvenilir ve ölçeklenebilir bir şekilde yönetmemizi sağlar. Biz bu java application özelinde yapılan işlemleri airflow kullanarak otomatik olacak şekilde yapabiliriz.
+
+## Airflow Nedir?
+
+Airflow, karmaşık veri işleme süreçlerini otomatize etmek için geliştirilmiş açık kaynaklı bir platformdur. Görsel arayüzü, hazır operatörleri ve güçlü monitoring özellikleriyle, veri pipeline'larını etkili bir şekilde yönetmemizi sağlar.
 
 ## Neden Airflow?
 
-Airflow'u seçmemin temel nedeni, veri işleme süreçlerini yönetmek için sunduğu kapsamlı çözümlerdir. Görsel arayüzü sayesinde workflow'ları kolayca izleyebilir ve yönetebiliriz. MySQL ve Kafka için hazır operator'lar, entegrasyon sürecini basitleştirir. Ayrıca, role-based access control ve açık kaynak yapısı, güvenlik ve maliyet açısından önemli avantajlar sağlar. Bizim projemiz özelinde akışın bir Workflow yer alıyor.
+### 1. DAG (Directed Acyclic Graph) Yapısı
+- Görevlerin bağımlılıklarını ve çalışma sırasını belirler.
+- Bizim senaryomuz için örnek akış:
+  ```
+  Extract Orders -> Transform Orders -> Load to Kafka
+  ```
+- Başarısız görevlerde bağımlı görevler otomatik durdurulur.
+- Paralel çalışabilecek görevler otomatik tespit edilir.
+
+### 2. Zamanlanmış Görevler
+- Cron benzeri ifadelerle esnek zamanlama sayesinde görevleri otomotize edebiliriz.
+- Örnek zamanlamalar:
+  ```python
+  # Her gün gece yarısı çalıştır
+  schedule_interval='0 0 * * *'
+  
+  # Her Pazartesi sabah 8'de çalıştır
+  schedule_interval='0 8 * * 1'
+  ```
+
+### 3. Otomatik Retry Mekanizması
+- Başarısız görevler için otomatik yeniden deneme mekanizmasına sahiptir.(Retry Pattern)
+- Örnek konfigürasyon:
+  ```python
+  retries = 3                    # Toplam 3 deneme
+  retry_delay = timedelta(minutes=5)  # 5 dakika bekle
+  ```
+- Maksimum deneme sayısına ulaşıldığında alert tetiklenir.Bu şekilde bildirim alarak probleme müdahale edebiliriz.
+
+### 4. Detaylı Monitoring ve Loglama
+- Web UI üzerinden gerçek zamanlı izleme:
+  - Görev durumları ve çalışma süreleri
+  - Hata mesajları ve stack trace'ler
+  - Resource kullanımı ve performans metrikleri
+- Uzun süreli log saklama ve arama
+- Özelleştirilebilir dashboard'lar
+
+### 5. Bildirim Sistemi
+- Çoklu bildirim kanalları:
+  ```python
+  # E-posta bildirimleri
+  email_on_failure = True
+  email_on_retry = True
+  
+  # Slack entegrasyonu
+  slack_webhook_conn_id = 'slack_default'
+  ```
+- Farklı durumlar için özelleştirilebilir bildirimler:
+  - Başarısızlık durumunda
+  - Retry durumunda
+  - Başarılı tamamlanma durumunda
+- Ekip bazlı bildirim yönetimi
+
+## Bizim Senaryo İçin Avantajları
+
+Otomatik hata yönetimine sahip olması, Veri Bütünlüğü garantisi,Sürekli Monitoring yapması güvenirlik konusunda bize destek sağlar.
+Günlük otomatik çalışma,paralel işlem desteği(paralel tasks) ve Resource optimizasyonu (CPU kullanım) bize Verimlilik konusunda destek sağlar.
+Detaylı loglar,performans metrikleri ve Hata Takibi sayesinde Monitoring kısmında uygulamanın sağlıklı çalıştığını izleme noktasında destek sağlar.
+Anlık Bildirimler,Kolay Debug İmkanı ve Hızlı recovery sayesinde biz genel program'da oluşan problemlere müdahale edebiliriz bu şekilde sistem daha yüksek erişebilirlik sağlar.
+
+Bu özellikler, sipariş işleme sürecimiz için ideal çünkü:
+- Günlük çalışan bir süreç
+- Veri bütünlüğü kritik
+- Hata durumunda hızlı müdahale gerekli
+- Süreç performansının izlenmesi önemli
+
+## Airflow'un Algoritma Yapısı
+
+Airflow, temel olarak şu Yöneylem Araştırması algoritmalarını kullanır:
+
+1. **Graf Teorisi (DAG)**
+   - Görevler arası bağımlılıkları yönetmek için
+   - En kısa yol algoritması ile task sıralaması
+   - Topolojik sıralama ile bağımlılık çözümleme
+
+2. **Kuyruk Teorisi**
+   - Task'ların işlenme sırasını belirleme
+   - Worker havuzu optimizasyonu
+   - Kaynak kullanımını dengeleme
+
+3. **Zamanlama Algoritmaları**
+   - Cron ifadeleri ile görev planlama
+   - Paralel işlem optimizasyonu
+   - Kaynak kullanımına göre görev dağıtımı
+
+4. **Hata Yönetimi ve Retry Stratejileri**
+   - Exponential Backoff algoritması
+   - Hata durumunda yeniden deneme stratejileri
+   - Kaynak kullanımına göre retry planlaması
+
+5. **Kaynak Optimizasyonu**
+   - Dinamik programlama ile kaynak dağıtımı
+   - Worker havuzu ölçeklendirme
+   - Yük dengeleme algoritmaları
+
 
 ## Workflow
 
@@ -23,8 +124,8 @@ graph TD
 
 ## Workflow Akışı
 
-Başlangıç olarak, MySQL veritabanından teslim edilmiş siparişleri çekerek başlarız. Bu adıma Extract yani Çekme adımı diyebiliriz. Belirli bir tarih aralığındaki siparişler filtrelenir ve veri doğrulama kontrollerinden geçirilir. Bu aşamada verilerin doğruluğu ve bütünlüğü kontrol edilir.
+Extract (Veri Çekme) adımında, MySQL veritabanından belirli bir tarih aralığındaki teslim edilmiş siparişler çekilir. Veriler, doğruluk ve bütünlük kontrollerinden geçirilir.
 
-Sonraki adımda, geçerli siparişler için teslimat süreleri hesaplanır. Bu Transform yani Dönüştürme adımıdır. Burada ETA ve gerçek teslimat süreleri karşılaştırılır, veriler temizlenir ve istenen formata dönüştürülür.
+Transform (Veri Dönüştürme) adımında, geçerli siparişler için teslimat süreleri hesaplanır. ETA ve gerçek teslimat süreleri karşılaştırılır, veriler temizlenir ve Kafka'ya uygun formata dönüştürülür.
 
-Son olarak, işlenmiş veriler Kafka'ya gönderilir. Bu Load yani Yükleme adımıdır. Gönderim başarısı doğrulanır ve herhangi bir hata durumunda, sistem otomatik olarak retry mekanizmasını devreye sokar. Bu sayede veri kaybı yaşanmaz ve süreç güvenilir bir şekilde tamamlanır.
+Load (Veri Yükleme) adımında, işlenmiş veriler Kafka'ya gönderilir. Gönderim başarısı doğrulanır. Hata durumunda, sistem 3 kez 5'er dakika(tamamen farazi) aralıklarla yeniden deneme yapar. Maksimum deneme sayısına ulaşıldığında, hata loglanır ve ilgili ekip bilgilendirilir.
