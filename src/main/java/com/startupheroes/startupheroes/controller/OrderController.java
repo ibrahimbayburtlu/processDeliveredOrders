@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.startupheroes.startupheroes.constant.Endpoints;
+import com.startupheroes.startupheroes.constant.endpoints;
 import com.startupheroes.startupheroes.entity.Order;
 import com.startupheroes.startupheroes.model.DeliveredOrder;
 import com.startupheroes.startupheroes.service.OrderService;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping(Endpoints.ORDERS)
+@RequestMapping(endpoints.ORDERS)
 public class OrderController {
     private final OrderService orderService;
 
@@ -29,7 +29,7 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
-    @GetMapping(Endpoints.ORDERS_ID)
+    @GetMapping(endpoints.ORDERS_ID)
     public Order getOrderById(@PathVariable Long id) {
         Order order = orderService.getOrderById(id);
         if (order == null) {
@@ -38,7 +38,7 @@ public class OrderController {
         return order;
     }
 
-    @GetMapping(Endpoints.ORDERS_PROCESS)
+    @GetMapping(endpoints.ORDERS_PROCESS)
     public List<DeliveredOrder> processDeliveredOrders(@PathVariable LocalDate date) {
         return orderService.processDeliveredOrders(date);
     }
