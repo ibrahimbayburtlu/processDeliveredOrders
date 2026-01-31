@@ -2,6 +2,9 @@ package com.startupheroes.startupheroes.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import com.startupheroes.startupheroes.entity.Order;
 import com.startupheroes.startupheroes.model.DeliveredOrder;
@@ -16,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private final OrderKafkaProducer kafkaProducer;
 
+    @Autowired
+    private final StringRedisTemplate stringRedisTemplate;
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public List<Order> getAllOrders() {
@@ -40,8 +47,10 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    @Cacheable(value = "orders", key = "#id")
     public Order getOrderById(Long id) {
         try {
+            logger.info("DB HIT -> getOrderById({})", id);
             return orderRepository.findById(id).orElse(null);
         } catch (Exception e) {
             logger.error("Error while fetching order with id: {}", id, e);
@@ -51,52 +60,61 @@ public class OrderServiceImpl implements OrderService {
 
     // Delivery date is the date when the order will be delivered
     public List<DeliveredOrder> processDeliveredOrders(LocalDate date) {
+
+        // Idempotency key (same date should not be processed twice)
+        String processedKey = "processed:deliveryDate:" + date; // e.g. 2024-02-20
+
+        // If already processed -> block duplicate processing
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(processedKey))) {
+            throw new IllegalStateException("Already processed for date: " + date);
+        }
+
         try {
             List<Order> orders = orderRepository.findByDeliveryAt(date);
             logger.info("Found {} orders for date: {}", orders.size(), date);
 
             List<DeliveredOrder> deliveredOrders = orders.stream()
-                .map(order -> {
-                    try {
-                        DeliveredOrder deliveredOrder = DeliveredOrder.builder()
-                            .id(order.getId())
-                            .created_at(order.getCreatedAt().format(DATE_FORMATTER))
-                            .last_updated_at(order.getLastUpdatedAt().format(DATE_FORMATTER))
-                            .build();
-                        
-                        // Collection duration
-                        if (order.getCollectionStartedAt() != null && order.getCollectedAt() != null) {
-                            deliveredOrder.setCollection_duration(
-                                (int) java.time.Duration.between(order.getCollectionStartedAt(), order.getCollectedAt()).toMinutes()
+                    .map(order -> {
+                        try {
+                            DeliveredOrder deliveredOrder = DeliveredOrder.builder()
+                                    .id(order.getId())
+                                    .created_at(order.getCreatedAt().format(DATE_FORMATTER))
+                                    .last_updated_at(order.getLastUpdatedAt().format(DATE_FORMATTER))
+                                    .build();
+
+                            // Collection duration
+                            if (order.getCollectionStartedAt() != null && order.getCollectedAt() != null) {
+                                deliveredOrder.setCollection_duration(
+                                        (int) java.time.Duration.between(order.getCollectionStartedAt(), order.getCollectedAt()).toMinutes()
+                                );
+                            }
+
+                            // Delivery duration
+                            if (order.getDeliveryStartedAt() != null && order.getDeliveryAt() != null) {
+                                deliveredOrder.setDelivery_duration(
+                                        (int) java.time.Duration.between(order.getDeliveryStartedAt(), order.getDeliveryAt()).toMinutes()
+                                );
+                            }
+
+                            // ETA (immutable)
+                            deliveredOrder.setEta(order.getEta());
+
+                            // Total time from order creation to delivery
+                            deliveredOrder.setLead_time(
+                                    (int) java.time.Duration.between(order.getCreatedAt(), order.getDeliveryAt()).toMinutes()
                             );
+
+                            // Order in time control LeadTime : actual delivery minutes, Eta : expected delivery minutes
+                            deliveredOrder.setOrder_in_time(deliveredOrder.getLead_time() <= order.getEta());
+
+                            return deliveredOrder;
+                        } catch (Exception e) {
+                            logger.error("Error processing order with id: {}", order.getId(), e);
+                            throw new OrderProcessingException("Failed to process order with id: " + order.getId(), e);
                         }
-                        
-                        // Delivery duration
-                        if (order.getDeliveryStartedAt() != null && order.getDeliveryAt() != null) {
-                            deliveredOrder.setDelivery_duration(
-                                (int) java.time.Duration.between(order.getDeliveryStartedAt(), order.getDeliveryAt()).toMinutes()
-                            );
-                        }
-                        
-                        // ETA (immutable)
-                        deliveredOrder.setEta(order.getEta());
-                        
-                        // Total time from order creation to delivery
-                        deliveredOrder.setLead_time(
-                            (int) java.time.Duration.between(order.getCreatedAt(), order.getDeliveryAt()).toMinutes()
-                        );
-                        
-                        // Order in time control LeadTime : actual delivery minutes, Eta : expected delivery minutes
-                        deliveredOrder.setOrder_in_time(deliveredOrder.getLead_time() <= order.getEta());
-                        
-                        return deliveredOrder;
-                    } catch (Exception e) {
-                        logger.error("Error processing order with id: {}", order.getId(), e);
-                        throw new OrderProcessingException("Failed to process order with id: " + order.getId(), e);
-                    }
-                })
-                .collect(Collectors.toList());
-            
+                    })
+                    .collect(Collectors.toList());
+
             // Send each DeliveredOrder to Kafka
             deliveredOrders.forEach(deliveredOrder -> {
                 try {
@@ -107,8 +125,12 @@ public class OrderServiceImpl implements OrderService {
                     throw new KafkaMessageException("Failed to send order to Kafka: " + deliveredOrder.getId(), e);
                 }
             });
-            
+
+            //Mark as processed ONLY after successful completion (prevents partial failures from being marked)
+            stringRedisTemplate.opsForValue().set(processedKey, "true", 7, java.util.concurrent.TimeUnit.DAYS);
+
             return deliveredOrders;
+
         } catch (OrderProcessingException | KafkaMessageException e) {
             throw e;
         } catch (Exception e) {
@@ -116,4 +138,5 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderProcessingException("Failed to process delivered orders", e);
         }
     }
+
 }
